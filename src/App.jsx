@@ -15,10 +15,10 @@ const AppContainer = styled.div`
 
 const TitleContainer = styled(motion.div)`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   justify-content: center;
 `
 
@@ -26,11 +26,11 @@ const BaguaSymbol = styled.div`
   font-family: monospace;
   color: #ffd700;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-  font-size: 2rem;
+  font-size: 1.5rem;
 `
 
 const Title = styled.h1`
-  font-size: 2.5rem;
+  font-size: 2rem;
   color: #ffd700;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
   margin: 0;
