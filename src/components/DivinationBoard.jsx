@@ -133,13 +133,20 @@ const StyledRadioGroup = styled(Radio.Group)`
 `
 
 const YaoResult = styled.div`
-  flex: 1;
+  color: #ffd700;
+  font-size: 1rem;
   min-width: 60px;
   text-align: center;
   padding: 0.5rem;
   background: ${props => props.active ? 'rgba(255, 215, 0, 0.1)' : 'transparent'};
   border-radius: 8px;
   transition: all 0.3s ease;
+  border: 1px solid #8b4513;
+  
+  ${props => props.active && `
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+  `}
 `
 
 const ActionButton = styled(motion.button)`
