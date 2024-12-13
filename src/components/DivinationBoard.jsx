@@ -1,9 +1,15 @@
 import React, { useState } from 'react'
 import styled from '@emotion/styled'
-import { Radio, message, Modal } from 'antd'
+import { Radio, message, Modal, Input } from 'antd'
 import { motion } from 'framer-motion'
 import axios from 'axios'
-import { API_CONFIG, DIVINATION_TOPICS, YAO_SYMBOLS } from '../config'
+import { 
+  API_CONFIG, 
+  DIVINATION_TOPICS, 
+  YAO_SYMBOLS,
+  BUDDHA_ART,
+  UI_MESSAGES 
+} from '../config'
 
 const Container = styled.div`
   width: 100%;
@@ -100,6 +106,7 @@ const TopicTitle = styled.div`
   color: #ffd700;
   font-size: 1rem;
   white-space: nowrap;
+  margin-right: 1rem;
 `
 
 const StyledRadioGroup = styled(Radio.Group)`
@@ -170,42 +177,15 @@ const ActionButton = styled(motion.button)`
   }
 `
 
-const BuddhaArt = styled.div`
+const BuddhaArt = styled.pre`
   font-family: monospace;
-  white-space: pre;
   color: #ffd700;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
   font-size: 1rem;
   line-height: 1.2;
-  text-align: center;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
-
-const buddhaArt = `
-                   _ooOoo_
-                  o8888888o
-                  88" . "88
-                  (| -_- |)
-                  O\\  =  /O
-               ____/\`---'\\____
-             .'  \\\\|     |//  \`.
-            /  \\\\|||  :  |||//  \\
-           /  _||||| -:- |||||-  \\
-           |   | \\\\\\  -  /// |   |
-           | \\_|  ''\\---/''  |   |
-           \\  .-\\__  \`-\`  ___/-. /
-         ___\`. .'  /--.--\\  \`. . __
-      ."" '<  \`.___\\_<|>_/___.'  >'"".
-     | | :  \`- \\\`.;\`\\ _ /\`;.\`/ - \` : | |
-     \\  \\ \`-.   \\_ __\\ /__ _/   .-\` /  /
-======\`-.____\`-.___\\_____/___.-\`____.-'======
-                   \`=---='
-
-佛主保佑 神机妙算
+  margin: 0;
+  white-space: pre;
+  text-align: left;
 `
 
 const CoinsContainer = styled.div`
@@ -280,6 +260,32 @@ const LoadingContent = styled.div`
   }
 `
 
+const CustomInput = styled(Input)`
+  width: 200px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #8b4513;
+  border-radius: 6px;
+  color: #000;
+  font-size: 1rem;
+  
+  &:hover, &:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  }
+
+  &::placeholder {
+    color: rgba(0, 0, 0, 0.45);
+  }
+`
+
+const TopicContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+`
+
 function getHexagramSymbol(frontCount) {
   switch(frontCount) {
     case 3: // 三字
@@ -299,6 +305,7 @@ function DivinationBoard() {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState([])
   const [selectedTopic, setSelectedTopic] = useState(null)
+  const [customTopic, setCustomTopic] = useState('')
   const [divinationResult, setDivinationResult] = useState('')
   const [showBuddha, setShowBuddha] = useState(true)
   const [coinSides, setCoinSides] = useState(['front', 'front', 'front'])
@@ -309,8 +316,9 @@ function DivinationBoard() {
     setDivinationResult('')
     setShowBuddha(true)
     setSelectedTopic(null)
+    setCustomTopic('')
     setCoinSides(['front', 'front', 'front'])
-    setIsLoading(false)
+    setIsModalVisible(false)
   }
 
   const flipCoins = () => {
@@ -320,13 +328,18 @@ function DivinationBoard() {
   }
 
   const handleCastDivination = async () => {
-    if (!selectedTopic) {
-      message.warning('请先选择想要透露的天机')
+    if (results.length >= 6) {
+      resetDivination()
       return
     }
 
-    if (results.length >= 6) {
-      resetDivination()
+    if (!selectedTopic) {
+      message.warning(UI_MESSAGES.ERROR_NO_TOPIC)
+      return
+    }
+
+    if (selectedTopic === 'custom' && !customTopic.trim()) {
+      message.warning(UI_MESSAGES.ERROR_NO_CUSTOM)
       return
     }
 
@@ -349,14 +362,54 @@ function DivinationBoard() {
     }, 1000)
   }
 
+  const handleCustomTopicChange = (e) => {
+    const value = e.target.value
+    const chineseChars = value.match(/[\u4e00-\u9fa5]/g) || []
+    
+    if (chineseChars.length === 5) {
+      if (value.length < customTopic.length) {
+        setCustomTopic(value)
+      }
+      return
+    }
+    
+    if (chineseChars.length < 5) {
+      setCustomTopic(value)
+    }
+  }
+
+  const handleTopicSelect = (e) => {
+    const value = e.target.value
+    setSelectedTopic(value)
+    if (value !== 'custom') {
+      setCustomTopic('')
+    }
+  }
+
   const handleAnalyze = async () => {
     if (results.length < 6) return
+
+    let topic
+    if (selectedTopic === 'custom') {
+      if (!customTopic.trim()) {
+        message.warning(UI_MESSAGES.ERROR_NO_CUSTOM)
+        return
+      }
+      topic = customTopic.trim()
+    } else {
+      topic = DIVINATION_TOPICS.find(t => t.value === selectedTopic)?.label
+    }
+
+    if (!topic) {
+      message.warning(UI_MESSAGES.ERROR_NO_TOPIC)
+      return
+    }
 
     setIsModalVisible(true)
     try {
       const response = await axios.post(API_CONFIG.DIVINATION_API_URL, {
         inputs: {},
-        query: `我的六次排卦分别是${results.join('，')}，我要求挂的内容为${selectedTopic}，请根据我的要求给出解答。`,
+        query: `我的六次排卦分别是${results.join('，')}，我要求挂的内容为${topic}，请根据我的要求给出解答。`,
         response_mode: "blocking",
         conversation_id: "",
         user: "10@buddha"
@@ -372,7 +425,7 @@ function DivinationBoard() {
         setDivinationResult(response.data.answer)
       }
     } catch (error) {
-      message.error('解卦过程出现问题，请稍后重试')
+      message.error(UI_MESSAGES.ERROR_API)
     } finally {
       setIsModalVisible(false)
     }
@@ -397,7 +450,7 @@ function DivinationBoard() {
     <Container>
       <DivinationResult>
         {showBuddha ? (
-          <BuddhaArt>{buddhaArt}</BuddhaArt>
+          <BuddhaArt>{BUDDHA_ART}</BuddhaArt>
         ) : (
           <div style={{ width: '100%' }}>{divinationResult}</div>
         )}
@@ -405,21 +458,30 @@ function DivinationBoard() {
 
       <SectionContainer>
         <SectionLeft>
-          <TopicTitle>选择想要透露的天机</TopicTitle>
+          <TopicTitle>透露的天机</TopicTitle>
         </SectionLeft>
         <SectionRight>
-          <StyledRadioGroup
-            optionType="button"
-            buttonStyle="solid"
-            value={selectedTopic}
-            onChange={e => setSelectedTopic(e.target.value)}
-          >
-            {DIVINATION_TOPICS.map(topic => (
-              <Radio.Button key={topic.value} value={topic.value}>
-                {topic.label}
-              </Radio.Button>
-            ))}
-          </StyledRadioGroup>
+          {selectedTopic === 'custom' ? (
+            <CustomInput
+              placeholder={UI_MESSAGES.PLACEHOLDER_CUSTOM}
+              value={customTopic}
+              onChange={handleCustomTopicChange}
+              autoFocus
+            />
+          ) : (
+            <StyledRadioGroup
+              optionType="button"
+              buttonStyle="solid"
+              value={selectedTopic}
+              onChange={handleTopicSelect}
+            >
+              {DIVINATION_TOPICS.map(topic => (
+                <Radio.Button key={topic.value} value={topic.value}>
+                  {topic.label}
+                </Radio.Button>
+              ))}
+            </StyledRadioGroup>
+          )}
         </SectionRight>
       </SectionContainer>
 
@@ -464,7 +526,7 @@ function DivinationBoard() {
       </ActionButton>
 
       <LoadingModal
-        title="玄机演算"
+        title={UI_MESSAGES.LOADING_TITLE}
         open={isModalVisible}
         footer={null}
         closable={false}
@@ -473,7 +535,7 @@ function DivinationBoard() {
       >
         <LoadingContent>
           <div className="loading-icon">☸</div>
-          <div>正在请示佛主，解析天机...</div>
+          <div>{UI_MESSAGES.LOADING_MESSAGE}</div>
         </LoadingContent>
       </LoadingModal>
     </Container>
